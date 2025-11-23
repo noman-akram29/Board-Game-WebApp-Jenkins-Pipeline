@@ -45,10 +45,10 @@ pipeline {
             }
         }
         stage('Maven Build')    { steps { sh 'mvn package' } }
-        
+
         stage('Publish to Nexus') {
             steps {
-                withMaven(globalMavenSettingsConfig: 'Global-Config-Settings', jdk: 'JDK-21.0.8+9', maven: 'Maven-3.9.11', traceability: true) {
+                withMaven(globalMavenSettingsConfig: 'Global-Config-Settings', jdk: 'JDK-17.0.9+9', maven: 'Maven-3.9.11', traceability: true) {
                     sh "mvn deploy"
                 }
             }
