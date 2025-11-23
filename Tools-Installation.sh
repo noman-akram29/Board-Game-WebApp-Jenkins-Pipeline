@@ -79,7 +79,7 @@ sudo apt-get install trivy -y
 #   ------------    Kubernetes Setup - Run below on MASTER & WORKER    ------------
 
 # Update system
-sudo apt update && sudo apt upgrade -y
+sudo apt update
 
 # Disable swap (Kubernetes hates swap)
 sudo swapoff -a
@@ -152,7 +152,7 @@ MASTER_IP=$(ip addr show $INTERFACE | grep "inet " | awk '{print $2}' | cut -d/ 
 
 # Initialize cluster (using Calico CNI later, so we use --pod-network-cidr for Calico)
 sudo kubeadm init \
-  --pod-network-cidr=192.168.0.0/16 \ # Works fine OR set as per your requirements
+  --pod-network-cidr=192.168.0.0/16 \
   --cri-socket unix:///var/run/containerd/containerd.sock \
   --control-plane-endpoint $MASTER_IP \
   --upload-certs
