@@ -53,12 +53,26 @@ pipeline {
                 }
             }
         }
-        // stage('Build & Tag Docker Image') {
-        //     steps {
-        //         withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins') {
-        //             // some block
-        //         }
-        //     }
-        // }
+        stage('Build & Tag Docker Image') {
+            steps {
+                withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins', toolName: 'Docker-Tool') {
+                    sh "docker build -t nomanakram29/boardgame:latest ."
+                }
+            }
+        }
+        stage('Docker Image Scan') {
+            steps {
+                sh "trivy image --format table -o trivy-image-report.html nomanakram29/boardgame:latest"
+            }
+        }
+        stage('Docker Push Image'){
+            steps{
+                withCredentials([string(credentialsId: 'DockerHub-Creds-for-Jenkins', toolName: 'Docker-Tool')]) {
+                    // sh "docker login -u nomanakram29 -p ${dokcerHubPWD}"
+                    sh "docker push nomanakram29/boardgame:latest"
+                }
+            }
+        }
     }
 }
+
