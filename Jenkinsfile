@@ -1,7 +1,7 @@
 pipeline {
     agent any
     tools {
-        jdk 'JDK-21.0.8+9'
+        jdk 'JDK-17.0.9+9'
         maven 'Maven-3.9.11'
     }
     environment {
@@ -45,6 +45,19 @@ pipeline {
             }
         }
         stage('Maven Build')    { steps { sh 'mvn package' } }
-        
+        stage('Publish to Nexus') {
+            steps {
+                withMaven(globalMavenSettingsConfig: 'Global-Config-Settings', jdk: 'JDK-21.0.8+9', maven: 'Maven-3.9.11', traceability: true) {
+                    sh "mvn deploy"
+                }
+            }
+        }
+        stage('Build & Tag Docker Image') {
+            steps {
+                withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins') {
+                    // some block
+                }
+            }
+        }
     }
 }
