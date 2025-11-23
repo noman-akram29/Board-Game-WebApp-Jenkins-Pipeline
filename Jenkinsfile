@@ -55,7 +55,7 @@ pipeline {
         }
         stage('Build & Tag Docker Image') {
             steps {
-                withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins', toolName: 'Docker-Tool') {
+                withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins', url: '') {
                     sh "docker build -t nomanakram29/boardgame:latest ."
                 }
             }
@@ -66,10 +66,11 @@ pipeline {
             }
         }
         stage('Docker Push Image'){
-            steps{
-                withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins', toolName: 'Docker-Tool') {
-                    // sh "docker login -u nomanakram29 -p ${dokcerHubPWD}"
-                    sh "docker push nomanakram29/boardgame:latest"
+            stage('Docker Push Image'){
+                steps{
+                    withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins', url: '') {
+                        sh "docker push nomanakram29/boardgame:latest"
+                    }
                 }
             }
         }
