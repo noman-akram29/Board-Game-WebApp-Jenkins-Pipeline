@@ -66,12 +66,11 @@ pipeline {
             }
         }
         stage('Docker Push Image'){
-            stage('Docker Push Image'){
-                steps{
-                    withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins', url: '') {
-                        sh "docker push nomanakram29/boardgame:latest"
-                    }
+            steps{
+                withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins', url: '') {
+                    sh "docker push nomanakram29/boardgame:latest"
                 }
+            
             }
         }
     }
