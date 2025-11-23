@@ -52,12 +52,12 @@ pipeline {
                 }
             }
         }
-        stage('Build & Tag Docker Image') {
-            steps {
-                withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins') {
-                    // some block
-                }
-            }
-        }
+        // stage('Build & Tag Docker Image') {
+        //     steps {
+        //         withDockerRegistry(credentialsId: 'DockerHub-Creds-for-Jenkins') {
+        //             // some block
+        //         }
+        //     }
+        // }
     }
 }
