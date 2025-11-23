@@ -67,7 +67,7 @@ pipeline {
         }
         stage('Docker Push Image'){
             steps{
-                withCredentials([string(credentialsId: 'DockerHub-Creds-for-Jenkins', toolName: 'Docker-Tool')]) {
+                withDockerRegistry([string(credentialsId: 'DockerHub-Creds-for-Jenkins', toolName: 'Docker-Tool')]) {
                     // sh "docker login -u nomanakram29 -p ${dokcerHubPWD}"
                     sh "docker push nomanakram29/boardgame:latest"
                 }
