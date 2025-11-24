@@ -1,13 +1,14 @@
-#   ------------    Update & Upgrade    ------------
+#!/bin/bash
 
+# ------------ Update & Upgrade ------------
 sudo apt-get update && sudo apt-get upgrade -y
 
-#   ------------    Jenkins Server Installation    ------------
-
+# ------------ Jenkins Server Installation ------------
+sleep 10
 sudo apt-get update
 sudo apt install fontconfig openjdk-21-jre -y
 java -version
-    
+sleep 10
 sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
 https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
 echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
@@ -15,35 +16,34 @@ https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
     /etc/apt/sources.list.d/jenkins.list > /dev/null
 sudo apt update
 sudo apt install jenkins -y
-    
-systemctl status jenkins.service
-    
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+   
+cat /var/lib/jenkins/secrets/initialAdminPassword > /home/ubuntu/jenkins_initial_password.txt 2>/dev/null || true
 
-#   ------------    Docker Installation    ------------
+systemctl enable jenkins --now
 
+# ------------ Docker Installation ------------
+sleep 10
 sudo apt update
 sudo apt install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
-Types: deb
-URIs: https://download.docker.com/linux/ubuntu
-Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
-Components: stable
-Signed-By: /etc/apt/keyrings/docker.asc
-EOF
 
+sudo rm -f /etc/apt/sources.list.d/docker.sources   # remove the broken file
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $( . /etc/os-release && echo $VERSION_CODENAME ) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sleep 10
 sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+sleep 10
+sudo usermod -aG docker ubuntu
 
-sudo usermod -aG docker $USER
-newgrp docker
+docker version
 
-#   ------------    SonarQube Server Container    ------------
-
+# ------------ SonarQube Server Container ------------
+sleep 10
 docker run -d \
   --name SonarQube-Server \
   --restart unless-stopped \
@@ -53,8 +53,25 @@ docker run -d \
   -v sonarqube_extensions:/opt/sonarqube/extensions \
   sonarqube:latest
 
+echo "SonarQube is starting… it can take 2-5 minutes on first run"
+
+# ------------ Trivy Installation ------------
+sleep 10
+sudo apt-get update
+sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+sudo apt-get update
+sudo apt-get install trivy -y
+
+echo "=== Installation finished ===" > /home/ubuntu/install-summary.txt
+echo "Jenkins initial password:" >> /home/ubuntu/install-summary.txt
+cat /var/lib/jenkins/secrets/initialAdminPassword 2>/dev/null >> /home/ubuntu/install-summary.txt
+chown ubuntu:ubuntu /home/ubuntu/install-summary.txt
+
 #   ------------    Nexus Server Container    ------------
 
+sleep 10
 docker run -d \
   --name Nexus-Server \
   --restart unless-stopped \
@@ -64,17 +81,12 @@ docker run -d \
   -v nexus-data:/nexus-data \
   sonatype/nexus3:latest
 
-#   ------------    Trivy Scanner Installation    ------------
+echo "Nexus is starting… it can take 2-5 minutes on first run"
 
-sudo apt-get update
-sudo apt-get install -y wget apt-transport-https gnupg lsb-release
 
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+# --------------------------------------------------------------------------------------
 
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
-
-sudo apt-get update
-sudo apt-get install trivy -y
+#!/bin/bash
 
 #   ------------    Kubernetes Setup - Run below on MASTER & WORKER    ------------
 
@@ -85,7 +97,8 @@ sudo apt update
 sudo swapoff -a
 sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 
-# Load required kernel modules
+sudo systemctl mask swap.target 2>/dev/null || true
+
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -94,7 +107,6 @@ EOF
 sudo modprobe overlay
 sudo modprobe br_netfilter
 
-# Set sysctl params required by Kubernetes
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-iptables  = 1
 net.bridge.bridge-nf-call-ip6tables = 1
@@ -103,12 +115,11 @@ EOF
 
 sudo sysctl --system
 
-#   ------------
+#   --------------------------------------------------------------------------------------
 
 sudo apt update
 sudo apt install -y ca-certificates curl gnupg
 
-# Add Docker's official GPG key and repo (containerd is in Docker repo)
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -120,20 +131,20 @@ echo \
 sudo apt update
 sudo apt install -y containerd.io
 
-# Configure containerd to use systemd cgroup driver (required for Kubernetes)
 sudo mkdir -p /etc/containerd
 containerd config default | sudo tee /etc/containerd/config.toml > /dev/null
 
-# Edit the config: enable systemd cgroup
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 
-# Restart containerd
+sudo sed -i '/SystemdCgroup = false/c\            SystemdCgroup = true' /etc/containerd/config.toml || \
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+
 sudo systemctl restart containerd
 sudo systemctl enable containerd
 
-#   ------------
+#   --------------------------------------------------------------------------------------
 
-# Add Kubernetes apt repository
+
 sudo apt update
 sudo apt install -y apt-transport-https ca-certificates curl gpg
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
@@ -143,6 +154,12 @@ echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 sudo apt update
 sudo apt install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
+
+
+echo "Kubernetes pre-requisites installed successfully" > /home/ubuntu/k8s-ready.txt
+echo "containerd cgroup: $(grep SystemdCgroup /etc/containerd/config.toml)" >> /home/ubuntu/k8s-ready.txt
+echo "kubelet version: $(kubelet --version)" >> /home/ubuntu/k8s-ready.txt
+chown ubuntu:ubuntu /home/ubuntu/k8s-ready.txt
 
 #   ------------    Kubernetes Setup - Run below on MASTER only    ------------
 
