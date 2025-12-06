@@ -113,6 +113,25 @@ eksctl version
 
 echo "kubectl, AWS CLI, and eksctl installation complete" | sudo tee -a /var/log/user-data.log
 
+# ------------ Terraform Installation ------------
+sudo apt update -y
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release unzip
+
+TERRAFORM_LATEST=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
+echo "Latest Terraform version: $TERRAFORM_LATEST"
+
+curl -LO "https://releases.hashicorp.com/terraform/${TERRAFORM_LATEST}/terraform_${TERRAFORM_LATEST}_linux_amd64.zip"
+
+unzip terraform_${TERRAFORM_LATEST}_linux_amd64.zip
+chmod +x terraform
+sudo mv terraform /usr/local/bin/
+terraform version
+
+# ------------ Ansible Installation ------------
+sudo apt update -y
+sudo apt install -y ansible-core
+ansible --version
+
 # --------------------------------------------------------------------------------------
 
 #!/bin/bash
