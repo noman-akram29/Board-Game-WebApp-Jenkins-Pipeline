@@ -136,6 +136,49 @@ ansible --version
 
 #!/bin/bash
 
+OUTPUT="/tmp/tools_check.log"
+echo "Tool Validation Report - $(date)" > $OUTPUT
+echo "======================================" >> $OUTPUT
+
+check_tool() {
+    TOOL_NAME=$1
+    COMMAND=$2
+
+    echo "" >> $OUTPUT
+    echo "Checking: $TOOL_NAME" >> $OUTPUT
+    echo "----------------------" >> $OUTPUT
+
+    if command -v $COMMAND >/dev/null 2>&1; then
+        echo "Status: INSTALLED" >> $OUTPUT
+        echo "Version:" >> $OUTPUT
+        $COMMAND --version >> $OUTPUT 2>&1 || $COMMAND version >> $OUTPUT 2>&1
+    else
+        echo "Status: NOT INSTALLED" >> $OUTPUT
+    fi
+}
+
+# Run checks
+check_tool "Java" "java"
+check_tool "Jenkins" "jenkins"
+check_tool "Docker" "docker"
+check_tool "Docker Compose" "docker compose"
+check_tool "Trivy" "trivy"
+check_tool "kubectl" "kubectl"
+check_tool "AWS CLI" "aws"
+check_tool "EKSCTL CLI" "eksctl"
+check_tool "Terraform" "terraform"
+check_tool "Ansible" "ansible"
+
+echo ""
+echo "Report saved to: $OUTPUT"
+echo "------------------------------------"
+cat $OUTPUT
+
+# --------------------------------------------------------------------------------------
+
+
+#!/bin/bash
+
 #   ------------    Kubernetes Setup - Run below on MASTER & WORKER    ------------
 
 # Update system
