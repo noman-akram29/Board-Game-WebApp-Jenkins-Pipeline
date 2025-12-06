@@ -39,6 +39,7 @@ sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 sleep 10
 sudo usermod -aG docker ubuntu
+sudo usermod -aG docker jenkins
 
 docker version
 
@@ -83,6 +84,34 @@ docker run -d \
 
 echo "Nexus is starting… it can take 2-5 minutes on first run"
 
+# ------------ Kubectl Installation ------------
+sudo apt update -y
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release unzip
+
+KUBECTL_LATEST=$(curl -s https://api.github.com/repos/kubernetes/kubernetes/releases/latest | grep tag_name | cut -d '"' -f 4)
+curl -LO "https://dl.k8s.io/release/${KUBECTL_LATEST}/bin/linux/amd64/kubectl"
+sudo chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+kubectl version --client
+
+# ------------ AWS CLI Installation ------------
+sudo apt update -y
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release unzip
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+unzip /tmp/awscliv2.zip -d /tmp
+sudo /tmp/aws/install
+aws --version
+
+# ------------ EKS CLI Installation ------------
+sudo apt update -y
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release unzip
+
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+sudo mv /tmp/eksctl /usr/local/bin/
+eksctl version
+
+echo "kubectl, AWS CLI, and eksctl installation complete" | sudo tee -a /var/log/user-data.log
 
 # --------------------------------------------------------------------------------------
 
